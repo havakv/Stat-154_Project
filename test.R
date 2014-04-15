@@ -23,7 +23,7 @@ test <- function(method, nr = 1, testProp = 1/3, path = "../", ...){
     sum(pred != y)/length(y)
 
   # Get data
-  path = paste(path, "train.csv", sep = '')
+  path <- paste(path, "train.csv", sep = '')
   data <- read.csv(path, header = FALSE)
   y <-  as.factor(data[,1])
   X <- data[,-1]
