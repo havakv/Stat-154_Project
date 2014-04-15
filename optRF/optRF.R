@@ -5,7 +5,7 @@ optRF <- function(X, y, nfold = 5){
   rfTuned <- tuneRF(X, y, 
 		    trace = FALSE, plot = FALSE, doBest = TRUE)
   
-  cv <- rfcv(X, y, xc.fold = nfold)
+  cv <- rfcv(X, y, cv.fold = nfold)
   nrPred <- cv$n.var[which(cv$error.cv == min(cv$error.cv))]
   if (length(nrPred) > 1)
     nrPred = min(nrPred)
@@ -31,4 +31,9 @@ predict.optRF <- function(obj, testX){
 
 source("../test.R")
 set.seed(0)
-test(randomForest, nr = 3)
+system.time(rate <- test(optRF, nr = 1, nfold = 5))
+rate
+
+#source("../test.R")
+#set.seed(0)
+#test(randomForest, nr = 3)

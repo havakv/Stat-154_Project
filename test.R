@@ -1,11 +1,7 @@
 # Script for testing functions
+# Consider parallelizing...
 
-test <- function(method, nr = 1, testProp = 1/3){
-  # Get data
-  data <- read.csv("../train.csv", header = FALSE)
-  y = as.factor(data[,1])
-  X = data[,-1]
-  
+test <- function(method, nr = 1, testProp = 1/3, path = "../", ...){
   splitData <- function(testProp = 1/3, XX = X, yy = y){
     # Split the data in train and test set.
     n <- length(yy)
@@ -23,22 +19,29 @@ test <- function(method, nr = 1, testProp = 1/3){
     testy <<- yy[test]
     invisible(NULL)
   }
-
   errorRate <- function(pred, y = testy)
     sum(pred != y)/length(y)
 
+  # Get data
+  path = paste(path, "train.csv", sep = '')
+  data <- read.csv(path, header = FALSE)
+  y <-  as.factor(data[,1])
+  X <- data[,-1]
+
+  # Run method nr times
   rates <- rep(NA, nr)
   for (i in 1:nr){
     splitData(testProp = testProp)
-    obj <- method(trainX, trainy)
+    obj <- method(trainX, trainy, ...)
     pred <- predict(obj, testX)
     rates[i] <- errorRate(pred, testy)
   }
 
   return(c(mean = mean(rates), sd = sd(rates)))
 }
-  
+
 # E.G.
+# Put this in you function file (see optRF.R)
 #set.seed(0)
 #library(randomForest)
 #test(randomForest, nr = 5)
