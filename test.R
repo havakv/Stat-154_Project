@@ -1,43 +1,79 @@
 # Script for testing functions
 # Consider parallelizing...
 
-test <- function(method, nr = 1, testProp = 1/3, path = "../", ...){
-  splitData <- function(testProp = 1/3, XX = X, yy = y){
-    # Split the data in train and test set.
-    n <- length(yy)
-    if (testProp >= 1 | testProp <= 0)
-      stop("testProp not in (0,1)")
-    sp <- ceiling(n*(1-testProp))
-    if (sp == 1)
-      stop("No data in train")
-    shuffled.order <- sample(n)
-    train <- shuffled.order[1:sp] #about 2/3 of the data
-    test <- shuffled.order[(sp+1):n]
-    trainX <<- XX[train,]
-    trainy <<- yy[train]
-    testX <<- XX[test,]
-    testy <<- yy[test]
-    invisible(NULL)
-  }
-  errorRate <- function(pred, y = testy)
-    sum(pred != y)/length(y)
+splitData <- function(testProp = 1/3, X, y){
+  # Split the data in train and test set.
+  n <- length(y)
+  if (testProp >= 1 | testProp <= 0)
+    stop("testProp not in (0,1)")
+  sp <- ceiling(n*(1-testProp))
+  if (sp == 1)
+    stop("No data in train")
+  shuffled.order <- sample(n)
+  train <- shuffled.order[1:sp] #about 2/3 of the data
+  test <- shuffled.order[(sp+1):n]
+  trainX <- X[train,]
+  trainy <- y[train]
+  testX <- X[test,]
+  testy <- y[test]
+  return(list(testX = testX, testy = testy, trainX = trainX, trainy = trainy))
+}
 
+missclass <- function(pred, y, level){
+  # See errorRates
+  ix <- which(y == level)
+  missy <- sum(pred[ix] != y[ix])/length(ix)
+  ix <- which(pred == level)
+  missPred <- sum(pred[ix] != y[ix])/length(ix)
+  return(c(missy, missPred))
+}
+
+errorRates <- function(pred, testy){
+  # Returns list:
+  # 	tot: total error rate
+  # 	indiv: should is rate that should have been classified as i.
+  # 	       shouldn't is rate that shouldn't have been classified as i.
+  ErrRates <- matrix(rep(NA, 2*8), 8, 2)
+  rownames(ErrRates) <- 1:8
+  colnames(ErrRates) <- c("should", "shouldn't")
+  for (i in 1:8)
+    ErrRates[i,] <- missclass(pred, testy, i)
+  tot <- sum(pred != testy)/length(testy)
+  return(list(tot = tot, indiv = ErrRates))
+}
+
+aveRates <- function(Rates){
+  # Compute the average rates and sd
+  means <- rowMeans(Rates, na.rm = TRUE)
+  sds <- apply(Rates, 1, sd, na.rm = TRUE)
+  tot <- c(means[1], sds[1])
+  names(tot) <- c("mean", "sd")
+  indiv <- cbind(means[2:9], sds[2:9], means[10:17], sds[10:17])
+  colnames(indiv) <- c("should", "sd", "shouldn't", "sd")
+  rownames(indiv) <- 1:8
+  return(list(tot = tot, indiv = indiv))
+}
+
+test <- function(method, nr = 1, testProp = 1/3, path = "../", ...){
+  # Function to run test on method
   # Get data
   path <- paste(path, "train.csv", sep = '')
   data <- read.csv(path, header = FALSE)
   y <-  as.factor(data[,1])
   X <- data[,-1]
 
-  # Run method nr times
-  rates <- rep(NA, nr)
+  # Run method nr times and get error rates
+  Rates <- matrix(rep(NA, nr*17), 17, nr)
   for (i in 1:nr){
-    splitData(testProp = testProp)
-    obj <- method(trainX, trainy, ...)
-    pred <- predict(obj, testX)
-    rates[i] <- errorRate(pred, testy)
+    Split <- splitData(testProp, X, y)
+    obj <- method(Split$trainX, Split$trainy, ...)
+    pred <- predict(obj, Split$testX)
+    rat <- errorRates(pred, Split$testy)
+    Rates[1,i] <- rat$tot
+    Rates[2:9,i] <- rat$indiv[,1]
+    Rates[10:17,i] <- rat$indiv[,2]
   }
-
-  return(c(mean = mean(rates), sd = sd(rates)))
+  return(aveRates(Rates))
 }
 
 # E.G.
