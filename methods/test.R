@@ -1,7 +1,8 @@
-# Script for testing functions
+# Functions for testing different methods
 # Consider parallelizing...
 
 findPath <- function(){
+  # Finds the path from your working directory to the "methods" folder
   wd <- strsplit(getwd(), "/")[[1]]
   nr <- max(which(wd == "methods"))
   n  <- length(wd)
@@ -10,6 +11,8 @@ findPath <- function(){
 
 splitData <- function( X, y, testProp = 1/3){
   # Split the data in train and test set.
+  # testProp is the proportion of the dataset that will be used for testing.
+  # so (1 - testProp) is the proportion for training.
   n <- length(y)
   if (testProp >= 1 | testProp <= 0)
     stop("testProp not in (0,1)")
@@ -36,6 +39,7 @@ missclass <- function(pred, y, level){
 }
 
 errorRates <- function(pred, testy){
+  # Compute misclassification errors 
   # Returns list:
   # 	tot: total error rate
   # 	indiv: should is rate that should have been classified as i.
@@ -51,6 +55,10 @@ errorRates <- function(pred, testy){
 
 aveRates <- function(Rates){
   # Compute the average rates and sd
+  # Returns list:
+  # 	tot: total error rate
+  # 	indiv: should is rate that should have been classified as i.
+  # 	       shouldn't is rate that shouldn't have been classified as i.
   means <- rowMeans(Rates, na.rm = TRUE)
   sds <- apply(Rates, 1, sd, na.rm = TRUE)
   tot <- c(means[1], sds[1])

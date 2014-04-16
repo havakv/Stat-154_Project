@@ -1,6 +1,13 @@
 # Function to create submission files
+findPath <- function(){
+  # Finds the path from your working directory to the "methods" folder
+  wd <- strsplit(getwd(), "/")[[1]]
+  nr <- max(which(wd == "methods"))
+  n  <- length(wd)
+  path <- paste(rep("../", n-nr), collapse = '')
+}
 
-submission <- function(method, path = "../", ...){
+submission <- function(method, path = findPath(), ...){
   # Get data
   pathTrain <- paste(path, "train.csv", sep = '')
   pathTest <- paste(path, "test.csv", sep = '')
