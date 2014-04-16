@@ -1,5 +1,7 @@
 # Functions for testing different methods
-# Consider parallelizing...
+require(parallel) # one of the core R packages
+require(doParallel)
+library(foreach)
 
 findPath <- function(){
   # Finds the path from your working directory to the "methods" folder
@@ -69,7 +71,54 @@ aveRates <- function(Rates){
   return(list(tot = tot, indiv = indiv))
 }
 
-test <- function(method, nr = 1, testProp = 1/3, path = findPath(), ...){
+getRatesInPar <- function(method, nr = 1, testProp = 1/3, nCores, 
+			  X, y, ...){
+  # Parallel version of getRates
+  # Returns 17 x nr matrix. Each row represent a rate.
+  # The reason for the format is efficiency in aveRates.
+  # Remember to set: export OMP_NUM_THREADS=1 on machine
+  #require(parallel) # one of the core R packages
+  #require(doParallel)
+  #library(foreach)
+  if(as.numeric(system("echo $OMP_NUM_THREADS", intern = TRUE))	!= 1)
+    stop("OMP_NUM_THREADS is not 1")
+
+  registerDoParallel(nCores)
+  seeds <- round(runif(nr, 0, .Machine$integer.max))
+  Rates <- matrix(rep(NA, nr*17), 17, nr)
+  Rates <- foreach(i = 1:nr, .combine = cbind) %dopar% {
+    cat("Starting ", i, "\n", sep = '')
+    set.seed(seeds[i])
+    Split <- splitData(X, y, testProp)
+    obj <- method(Split$trainX, Split$trainy, ...)
+    pred <- predict(obj, Split$testX)
+    rat <- errorRates(pred, Split$testy)
+    rates <- c(rat$tot, rat$indiv[,1], rat$indiv[,2])
+    cat("Ending ", i, "\n", sep = '')
+    rates
+  }
+  return(Rates)
+}
+
+getRates <- function(method, nr = 1, testProp = 1/3, X, y, ...){
+  # Returns 17 x nr matrix. Each row represent a rate.
+  # The reason for the format is efficiency in aveRates.
+  seeds <- round(runif(nr, 0, .Machine$integer.max))
+  Rates <- matrix(rep(NA, nr*17), 17, nr)
+  for (i in 1:nr){
+    set.seed(seeds[i])
+    Split <- splitData(X, y, testProp)
+    obj <- method(Split$trainX, Split$trainy, ...)
+    pred <- predict(obj, Split$testX)
+    rat <- errorRates(pred, Split$testy)
+    Rates[,i] <- c(rat$tot, rat$indiv[,1], rat$indiv[,2])
+  }
+  return(Rates)
+}
+
+
+test <- function(method, nr = 1, testProp = 1/3, path = findPath(),
+		parallel = FALSE, nCores = 2, ...){
   # Function to run test on method
   # Get data
   path <- paste(path, "train.csv", sep = '')
@@ -78,21 +127,18 @@ test <- function(method, nr = 1, testProp = 1/3, path = findPath(), ...){
   X <- data[,-1]
 
   # Run method nr times and get error rates
-  Rates <- matrix(rep(NA, nr*17), 17, nr)
-  for (i in 1:nr){
-    Split <- splitData(X, y, testProp)
-    obj <- method(Split$trainX, Split$trainy, ...)
-    pred <- predict(obj, Split$testX)
-    rat <- errorRates(pred, Split$testy)
-    Rates[1,i] <- rat$tot
-    Rates[2:9,i] <- rat$indiv[,1]
-    Rates[10:17,i] <- rat$indiv[,2]
-  }
+  if (parallel)
+    Rates <- getRatesInPar(method, nr, testProp, nCores, X, y, ...)
+  else
+    Rates <- getRates(method, nr, testProp, X, y, ...)
+
   return(aveRates(Rates))
 }
 
 # E.G.
 # Put this in you function file (see optRF.R)
-#set.seed(0)
 #library(randomForest)
-#test(randomForest, nr = 5)
+#set.seed(0)
+#test(randomForest, nr = 3)
+#set.seed(0)
+#test(randomForest, nr = 3, parallel = TRUE)
