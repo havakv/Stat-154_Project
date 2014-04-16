@@ -1,7 +1,14 @@
 # Script for testing functions
 # Consider parallelizing...
 
-splitData <- function(testProp = 1/3, X, y){
+findPath <- function(){
+  wd <- strsplit(getwd(), "/")[[1]]
+  nr <- max(which(wd == "methods"))
+  n  <- length(wd)
+  path <- paste(rep("../", n-nr), collapse = '')
+}
+
+splitData <- function( X, y, testProp = 1/3){
   # Split the data in train and test set.
   n <- length(y)
   if (testProp >= 1 | testProp <= 0)
@@ -54,7 +61,7 @@ aveRates <- function(Rates){
   return(list(tot = tot, indiv = indiv))
 }
 
-test <- function(method, nr = 1, testProp = 1/3, path = "../", ...){
+test <- function(method, nr = 1, testProp = 1/3, path = findPath(), ...){
   # Function to run test on method
   # Get data
   path <- paste(path, "train.csv", sep = '')
@@ -65,7 +72,7 @@ test <- function(method, nr = 1, testProp = 1/3, path = "../", ...){
   # Run method nr times and get error rates
   Rates <- matrix(rep(NA, nr*17), 17, nr)
   for (i in 1:nr){
-    Split <- splitData(testProp, X, y)
+    Split <- splitData(X, y, testProp)
     obj <- method(Split$trainX, Split$trainy, ...)
     pred <- predict(obj, Split$testX)
     rat <- errorRates(pred, Split$testy)
