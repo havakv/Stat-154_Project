@@ -1,18 +1,23 @@
 # Function for finding optimal random forest.
 library(randomForest)
 
-bestPred.optRF <- function(X, y, nfold = 5, ...){
-  # Find index for the best predictors in optRF
+sortPred.optRF <- function(X, y, ...){
   rfTuned <- tuneRF(X, y,
 		    trace = FALSE, plot = FALSE, doBest = TRUE, ...)
   if (length(rfTuned$importance) != ncol(X))
     stop("importance does not contain all variables")
+  sortPred <- sort(rfTuned$importance, decreasing = TRUE, 
+		   index.return = TRUE)$ix
+  return(sortPred)
+}
+
+bestPred.optRF <- function(X, y, nfold = 5, ...){
+  # Find index for the best predictors in optRF
   cv <- rfcv(X, y, cv.fold = nfold, ...)
   nrPred <- cv$n.var[which(cv$error.cv == min(cv$error.cv))]
   if (length(nrPred) > 1)
     nrPred <- min(nrPred)
-  sortPred <- sort(rfTuned$importance, decreasing = TRUE, 
-		   index.return = TRUE)$ix
+  sortPred <- sortPred.optRF(X, y, ...)
   bestPred <- sortPred[1:nrPred]
   return(bestPred)
 }

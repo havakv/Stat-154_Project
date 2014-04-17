@@ -4,38 +4,47 @@ source("../test.R")
 source("../optRF/optRF.R")
 
 #-------------------------------------------------
-path <- paste(findPath(), "train.csv", sep = '')
-data <- read.csv(path, header = FALSE)
-y <-  as.factor(data[,1])
-X <- data[,-1]
+#path <- paste(findPath(), "train.csv", sep = '')
+#data <- read.csv(path, header = FALSE)
+#y <-  as.factor(data[,1])
+#X <- data[,-1]
 
-# LDA with CV
-set.seed(0)
-ldaCV <- lda(X, y, CV = TRUE)
-sum(ldaCV$class != y)/length(y)
-ldaFit <- lda(X, y, CV = FALSE)
-ldaPred <- predict(ldaFit, X)
-sum(ldaPred$class != y)/length(y)
+## LDA with CV
+#set.seed(0)
+#ldaCV <- lda(X, y, CV = TRUE)
+#sum(ldaCV$class != y)/length(y)
+#ldaFit <- lda(X, y, CV = FALSE)
+#ldaPred <- predict(ldaFit, X)
+#sum(ldaPred$class != y)/length(y)
 #-------------------------------------------------
 
 # Function for testing LDA with optimal predictor selection
-#bestPred.lda2 <- function(X, y, ...){
-  #bestPred <- bestPred.optRF(X, y, nfold = 2)
-  #cv.lda2 <- function(nrPred, X, y, nfold){
-    #bestPred <- bestPred[1:nrPred]
-    #obj <- lda(X[,bestPred], y, CV = FALSE, ...)
-    #obj$bestPred <- bestPred
-    #class(obj) <- c("lda2", class(obj))
-    #predict(obj, Split$testX)
+bestPred.lda2 <- function(X, y, Split, ...){
+  error.lda2 <- function(nrPred, X, y, sortPred, Split, ...){
+    nrPred <- round(nrPred)
+    bestPred <- sortPred[1:nrPred]
+    obj <- lda(X[,bestPred], y, CV = FALSE, ...)
+    obj$bestPred <- bestPred
+    class(obj) <- c("lda2", class(obj))
+    pred <- predict(obj, Split$testX)
+    errRate <- errorRates(pred, Split$testy)$tot
+    cat(errRate, "\n")
+    cat(nrPred, "\n")
+    return(errRate)
+  }
+  sortPred <- sortPred.optRF(X, y)
+  opt <- optim(par = length(sortPred)/2, error.lda2, X = X, y = y, 
+	       sortPred = sortPred, Split = Split, ...,
+	       method = "Brent", lower = 1, upper = length(sortPred),
+	       control = list(reltol = 0.1))
+  return(sortPred[1:opt$par])
+}
 
-  #optim(length(bestPred), 
-
-#}
-
-lda2 <- function(X, y, ...){
+lda2 <- function(X, y, Split, ...){
   # Need a function to pick optimal predictors
   # With all predictors the results are horrible
-  bestPred <- bestPred.optRF(X, y, nfold = 2)[1:50]
+  if (!exists("Split")) stop("Need to set \"pushSplit = TRUE\"")
+  bestPred <- bestPred.lda2(X, y, Split, ...)
   cat("length(bestPred) ", length(bestPred), "\n")
   #bestPred <- NULL
   obj <- lda(X[,bestPred], y, CV = FALSE, ...)
@@ -52,37 +61,35 @@ predict.lda2 <- function(obj, testX){
 }
 
 set.seed(0)
-test1 <- test(lda2, nr = 4, parallel = TRUE)
+#test1 <- test(lda2, nr = 24, parallel = TRUE, pushSplit = TRUE, nCores = 6)
+test1 <- test(lda2, nr = 2, parallel = TRUE, pushSplit = TRUE)
 test1
-set.seed(0)
-test2 <- test(lda2, nr = 4, parallel = TRUE)
-test2
 
 
 #-------------------------------------------------
-# QDA with CV
-# We need < 100 predictors to be able to run qda
-qdaCV <- qda(X[,101:200], y, CV = TRUE)
-sum(is.na(qdaCV$class))
-sum(qdaCV$class != y, na.rm = TRUE)/length(y)
-
-#-------------------------------------------------
-
-# Function for testing QDA with optimal predictor selection
-qda2 <- function(X, y, ...){
-  # Need a function to pick optimal predictors
-  # Nr of predictors must be smaller than the smallest nr of one factor in the groups
-  # Max amount of predictors allowed in qda
-  maxNrPred <- min(as.integer(table(y)))-1
-
-  obj <- qda(X[,101:130], y, CV = FALSE, ...)
-  class(obj) <- c("qda2", class(obj))
-  return(obj)
-}
-predict.qda2 <- function(obj, testX){
-  class(obj) <- "qda"
-  pred <- predict(obj, testX[,101:130])
-  return(pred$class)
-}
-
-test(qda2, nr = 32, parallel = TRUE)
+## QDA with CV
+## We need < 100 predictors to be able to run qda
+#qdaCV <- qda(X[,101:200], y, CV = TRUE)
+#sum(is.na(qdaCV$class))
+#sum(qdaCV$class != y, na.rm = TRUE)/length(y)
+#
+##-------------------------------------------------
+#
+## Function for testing QDA with optimal predictor selection
+#qda2 <- function(X, y, ...){
+#  # Need a function to pick optimal predictors
+#  # Nr of predictors must be smaller than the smallest nr of one factor in the groups
+#  # Max amount of predictors allowed in qda
+#  maxNrPred <- min(as.integer(table(y)))-1
+#
+#  obj <- qda(X[,101:130], y, CV = FALSE, ...)
+#  class(obj) <- c("qda2", class(obj))
+#  return(obj)
+#}
+#predict.qda2 <- function(obj, testX){
+#  class(obj) <- "qda"
+#  pred <- predict(obj, testX[,101:130])
+#  return(pred$class)
+#}
+#
+#test(qda2, nr = 32, parallel = TRUE)
