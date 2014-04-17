@@ -104,3 +104,10 @@ for (a in seq(0, 1, 0.2)){
   cvError[i] = min(proCV$cvm)
   i = i+1
 }
+
+bestNet = cv.glmnet(as.matrix(trainX), trainY, family = "multinomial", type.measure = "class", alpha = 0.4)
+
+bestNet.predict = predict(bestNet, newx = as.matrix(test), s = bestNet$lambda.min, type = "class")
+
+submission(as.numeric(bestNet.predict), "yang_best_net.csv")
+
