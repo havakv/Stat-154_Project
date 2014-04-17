@@ -56,7 +56,7 @@ errorRates <- function(pred, testy){
 }
 
 getRatesInPar <- function(method, nr = 1, testProp = 1/3, nCores, 
-			  X, y, pushSplit = FALSE, ...){
+			  X, y, ...){
   # Parallel version of getRates
   # Returns 17 x nr matrix. Each row represent a rate.
   # The reason for the format is efficiency in aveRates.
@@ -74,10 +74,7 @@ getRatesInPar <- function(method, nr = 1, testProp = 1/3, nCores,
     cat("Starting ", i, "\n", sep = '')
     set.seed(seeds[i])
     Split <- splitData(X, y, testProp)
-    if (pushSplit)
-      obj <- method(Split$trainX, Split$trainy, Split, ...)
-    else
-      obj <- method(Split$trainX, Split$trainy, ...)
+    obj <- method(Split$trainX, Split$trainy, ...)
     pred <- predict(obj, Split$testX)
     rat <- errorRates(pred, Split$testy)
     rates <- c(rat$tot, rat$indiv[,1], rat$indiv[,2])
@@ -87,8 +84,7 @@ getRatesInPar <- function(method, nr = 1, testProp = 1/3, nCores,
   return(Rates)
 }
 
-getRates <- function(method, nr = 1, testProp = 1/3, X, y, 
-		     pushSplit = FALSE, ...){
+getRates <- function(method, nr = 1, testProp = 1/3, X, y, ...){
   # Returns 17 x nr matrix. Each row represent a rate.
   # The reason for the format is efficiency in aveRates.
   seeds <- round(runif(nr, 0, .Machine$integer.max))
@@ -96,10 +92,7 @@ getRates <- function(method, nr = 1, testProp = 1/3, X, y,
   for (i in 1:nr){
     set.seed(seeds[i])
     Split <- splitData(X, y, testProp)
-    if (pushSplit)
-      obj <- method(Split$trainX, Split$trainy, Split, ...)
-    else
-      obj <- method(Split$trainX, Split$trainy, ...)
+    obj <- method(Split$trainX, Split$trainy, ...)
     pred <- predict(obj, Split$testX)
     rat <- errorRates(pred, Split$testy)
     Rates[,i] <- c(rat$tot, rat$indiv[,1], rat$indiv[,2])
@@ -124,7 +117,7 @@ aveRates <- function(Rates){
 }
 
 test <- function(method, nr = 1, testProp = 1/3, path = findPath(),
-		parallel = FALSE, nCores = 2, pushSplit = FALSE, ...){
+		parallel = FALSE, nCores = 2, ...){
   # Function to run test on method
   # Get data
   path <- paste(path, "train.csv", sep = '')
@@ -134,9 +127,9 @@ test <- function(method, nr = 1, testProp = 1/3, path = findPath(),
 
   # Run method nr times and get error rates
   if (parallel & nr != 1)
-    Rates <- getRatesInPar(method, nr, testProp, nCores, X, y, pushSplit, ...)
+    Rates <- getRatesInPar(method, nr, testProp, nCores, X, y, ...)
   else
-    Rates <- getRates(method, nr, testProp, X, y, pushSplit, ...)
+    Rates <- getRates(method, nr, testProp, X, y, ...)
 
   return(aveRates(Rates))
 }

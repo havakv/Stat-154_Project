@@ -19,36 +19,37 @@ source("../optRF/optRF.R")
 #-------------------------------------------------
 
 # Function for testing LDA with optimal predictor selection
-bestPred.lda2 <- function(X, y, Split, ...){
-  error.lda2 <- function(nrPred, X, y, sortPred, Split, ...){
+bestPred.lda2 <- function(X, y, ...){
+  # Getting best predictors by sorting with optRF and choosing nr of predictors.
+  error.lda2 <- function(nrPred, X, y, sortPred, seed, ...){
+    # We optimize over this function to find the ideal nr of predictors
     nrPred <- round(nrPred)
     bestPred <- sortPred[1:nrPred]
-    obj <- lda(X[,bestPred], y, CV = FALSE, ...)
-    obj$bestPred <- bestPred
-    class(obj) <- c("lda2", class(obj))
-    pred <- predict(obj, Split$testX)
-    errRate <- errorRates(pred, Split$testy)$tot
-    cat(errRate, "\n")
-    cat(nrPred, "\n")
+    set.seed(seed)
+    rat <- getRates(lda2, 1, 1/3, X[,bestPred], y, ...)
+    errRate <- aveRates(rat)$tot[1]
+    #cat(errRate, "\n")
+    #cat(nrPred, "\n")
     return(errRate)
   }
   sortPred <- sortPred.optRF(X, y)
+  seed <- round(runif(1, 0, .Machine$integer.max))
   opt <- optim(par = length(sortPred)/2, error.lda2, X = X, y = y, 
-	       sortPred = sortPred, Split = Split, ...,
+	       sortPred = sortPred, seed = seed, ...,
 	       method = "Brent", lower = 1, upper = length(sortPred),
-	       control = list(reltol = 0.1))
-  return(sortPred[1:opt$par])
+	       control = list(reltol = 1))
+  cat("Nr pred ", floor(opt$par), "\n")
+  cat("Val ", opt$value, "\n")
+  return(sortPred[1:floor(opt$par)])
 }
 
-lda2 <- function(X, y, Split, ...){
-  # Need a function to pick optimal predictors
-  # With all predictors the results are horrible
-  if (!exists("Split")) stop("Need to set \"pushSplit = TRUE\"")
-  bestPred <- bestPred.lda2(X, y, Split, ...)
-  cat("length(bestPred) ", length(bestPred), "\n")
+lda2 <- function(X, y, opt = FALSE, ...){
+  # Function for running LDA whith variable selection (opt = TRUE)
+  if (opt) bestPred <- bestPred.lda2(X, y, ...)
+  else bestPred <- 1:ncol(X)
+  #cat("length(bestPred) ", length(bestPred), "\n")
   #bestPred <- NULL
   obj <- lda(X[,bestPred], y, CV = FALSE, ...)
-  #obj <- lda(X[,101:170], y, CV = FALSE, ...)
   obj$bestPred <- bestPred
   class(obj) <- c("lda2", class(obj))
   return(obj)
@@ -56,13 +57,12 @@ lda2 <- function(X, y, Split, ...){
 predict.lda2 <- function(obj, testX){
   class(obj) <- "lda"
   pred <- predict(obj, testX[,obj$bestPred])
-  #pred <- predict(obj, testX[,101:170])
   return(pred$class)
 }
 
 set.seed(0)
 #test1 <- test(lda2, nr = 24, parallel = TRUE, pushSplit = TRUE, nCores = 6)
-test1 <- test(lda2, nr = 2, parallel = TRUE, pushSplit = TRUE)
+test1 <- test(lda2, nr = 16, parallel = TRUE, opt = TRUE)
 test1
 
 
