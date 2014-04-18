@@ -46,12 +46,8 @@ predict.optRF <- function(obj, testX){
 # Test methods performance 
 #source("../test.R")
 #set.seed(0)
-#system.time(rate <- test(optRF, nr = 1, nfold = 2))
+#system.time(rate <- test(optRF, cv.fold = 4, parallel = TRUE, nfold = 2))
 #rate
-
-##source("../test.R")
-##set.seed(0)
-##test(randomForest, nr = 3)
 
 ##----------------------------------------------------
 ## Submissions
