@@ -10,7 +10,7 @@ bestPred.lda2 <- function(X, y, ...){
     nrPred <- round(nrPred)
     bestPred <- sortPred[1:nrPred]
     set.seed(seed)
-    rat <- getRates(lda2, 1, 3, X[,bestPred], y, parallel = FALSE, 
+    rat <- getRates(lda2, 1, 5, X[,bestPred], y, parallel = FALSE, 
 		    opt = FALSE, ...)
     errRate <- aveRates(rat)$tot[1]
     return(errRate)
@@ -43,7 +43,7 @@ predict.lda2 <- function(obj, testX){
 
 #set.seed(0)
 ##options(error = recover)
-#test1 <- test(lda2, nr = 1, cv.fold = 4, parallel = TRUE)
+#test1 <- test(lda2, nr = 1, cv.fold = 10, parallel = TRUE)
 #test1
 
 
