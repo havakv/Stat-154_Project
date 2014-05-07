@@ -1,0 +1,54 @@
+File of stored results 
+
+#--------------------------------------------------------------------------
+svmTune (radial)
+date: 04.05.14
+
+> tuneControl = trainControl(method = "repeatedcv", number = 10, repeats = 10) #repeated 10-fold cross-validation
+> system.time({svmRadial <- test(svmTune, cv.fold = 10, parallel = F, 
+		methodsvm = "svmRadial", trControl = tuneControl)})
+
+     user    system   elapsed 
+24213.722   114.899 19920.910 
+> svmRadial
+$tot  
+      mean         sd
+0.15750000 0.05596378
+
+$indiv
+      should         sd  shouldn't         sd
+1 0.17878510 0.12139141 0.26352092 0.10812279
+2 0.02909091 0.04690612 0.11547980 0.08178163
+3 0.19045455 0.14846537 0.13047619 0.09283204
+4 0.11146825 0.10967618 0.13931929 0.10342336
+5 0.18369408 0.17434818 0.16046551 0.12226349
+6 0.37675991 0.19705633 0.25383561 0.15120839
+7 0.05043803 0.07750729 0.09024531 0.08309787
+8 0.14663781 0.12073175 0.10302309 0.08808358
+$tot
+
+#--------------------------------------------------------------------------
+svmTune (poly)
+date: 04.05.14
+
+> tuneControl = trainControl(method = "repeatedcv", number = 10, repeats = 10) #repeated 10-fold cross-validation
+> system.time({svmPoly <- test(svmTune, cv.fold = 10, parallel = F,
++   methodsvm = "svmPoly", trControl = tuneControl)})
+
+      user     system    elapsed 
+307263.694   7059.985 139833.148 
+> svmPoly
+$tot  
+      mean         sd
+0.16375000 0.03928617
+
+$indiv
+      should         sd  shouldn't         sd
+1 0.24906038 0.15152771 0.25891955 0.08739014
+2 0.05000000 0.10540926 0.10085470 0.13052367
+3 0.18964286 0.13008618 0.17871656 0.10559356
+4 0.08542791 0.06932282 0.17012987 0.10876704
+5 0.11038462 0.11761633 0.15750000 0.10861431
+6 0.35734679 0.12503319 0.26185287 0.12331791
+7 0.05380952 0.06797017 0.07946210 0.07750889
+8 0.20317682 0.11199925 0.08935897 0.12106024
